@@ -31,12 +31,12 @@ def plot_portfolio(MA_share_val, staff_incentivisation_val, convertible_investme
     return total_money_spent_on_convertibles, portfolio_value_2030, VC_ownership_in_MA, ROI
 
 # Streamlit UI layout
-st.title('Why invest in MetaAnvil')
+st.title('Why invest in MetaForge')
 
 disclaimer = """
 ----
 ### Note
-The model assumes that we take all money up to 2030 in right now. Splitting this up into multiple financing rounds will improve things tremendously. The fact that the ROI looks decent despite not having modeled for this already says a lot about the viability of MetaAnvil's incubation.
+The model assumes that we take all money up to 2030 in right now. Splitting this up into multiple financing rounds will improve things tremendously. The fact that the ROI looks decent despite not having modeled for this already says a lot about the viability of MetaForge's incubation.
 <br><br><br>
 """
 
@@ -64,19 +64,19 @@ def calculate_convertible_shares_frac(convertible_investment, convertible_cap, p
 
 # Define sliders in columns
 with col1:
-    with st.expander("MetaAnvil and Staff Incentives", expanded=False):
-        MA_share_val = st.slider('MetaAnvil shares at spinoff [%] (excl convertible share)', 0, 35, MA_share_val_default)
+    with st.expander("MetaForge and Staff Incentives", expanded=False):
+        MA_share_val = st.slider('MetaForge shares at spinoff [%] (excl convertible share)', 0, 35, MA_share_val_default)
         staff_incentivisation_val = st.slider('% of MA\'s share being used to incentivize staff', 15, 40, staff_incentivisation_val_default)        
         # Calculate convertible_shares_frac for use here
         convertible_shares_frac_temp = calculate_convertible_shares_frac(convertible_investment_val_default, convertible_cap_val_default, pre_money_valuation_val_default)
         convertible_share = convertible_shares_frac_temp * frac_convertible_from_MA_val_default * 100
         convertible_share_text = f"""
-        {convertible_share:.2f}% <br> Shares from MetaAnvil's part in the convertible
+        {convertible_share:.2f}% <br> Shares from MetaForge's part in the convertible
         """
         st.markdown(convertible_share_text, unsafe_allow_html=True)
         
-    with st.expander("MetaAnvil Valuation", expanded=False):
-            MA_premoney_val = st.slider('MetaAnvil pre-money valuation in USD M', 5, 25, int(MA_premoney_val_default / 1e6), step=1) * 1e6
+    with st.expander("MetaForge Valuation", expanded=False):
+            MA_premoney_val = st.slider('MetaForge pre-money valuation in USD M', 5, 25, int(MA_premoney_val_default / 1e6), step=1) * 1e6
             
     with st.expander("Convertible Notes and Spinoff Valuations", expanded=False):
         convertible_investment_val = st.slider('Avg. convertible sum in USD M', 0.1, 1.0, convertible_investment_val_default / 1e6, step=0.1) * 1e6
@@ -112,61 +112,61 @@ financial_metrics = f"""
 </div>
 <div style='font-size: 24px;'>    
     Total funding = {total_money_spent/1e6:.1f} M<br>
-    Value of MetaAnvil's Portfolio in 2030 = {portfolio_value_2030:.0f} M<br>
+    Value of MetaForge's Portfolio in 2030 = {portfolio_value_2030:.0f} M<br>
     VC ownership of MA = {VC_ownership*100:.0f} %<br><br>
 </div>
 """
 st.markdown(financial_metrics, unsafe_allow_html=True)
 
-why_MetaAnvil = f"""
+why_MetaForge = f"""
 ----
 ## Intent 
 
-- Demonstrate why the ROI of funding MetaAnvil is higher than funding individual spinoffs directly.
-- Highlight that MetaAnvil as an incubator is a VC case, based on assumptions verified by its most recent spinoff Astrobeam.
+- Demonstrate why the ROI of funding MetaForge is higher than funding individual spinoffs directly.
+- Highlight that MetaForge as an incubator is a VC case, based on assumptions verified by its most recent spinoff Astrobeam.
 
 
 ### Hypotheses
 
-- MetaAnvil can keep consistently created high-value spinoff.
-- MetaAnvil cash-efficiently crates enough value to justify a decent bite without tripping up the spinoffs in future rounds.
-- With funding MetaAnvil can streamline its activities to bring down incubation costs, durations, while increasing the market readiness of spinoffs.
+- MetaForge can keep consistently created high-value spinoff.
+- MetaForge cash-efficiently crates enough value to justify a decent bite without tripping up the spinoffs in future rounds.
+- With funding MetaForge can streamline its activities to bring down incubation costs, durations, while increasing the market readiness of spinoffs.
 
 ### The Astrobeam Spinoff Example
 
-Astrobeam received a ~ 0.5M convertible investment notes from a VC, with a 5M cap. Astrobeam subcontracted MetaAnvil to act as de-facto founders, who e.g. performed user interviews and formed partnerships, analysed competitor tech, created system designs, initial specs, metasurface designs, patentable IP, established supplier relationships, pre-negotiated FTO agreements, assembled a team of industry leading consultants, handled marketing, and found an experienced photonics CEO/founder to take over. The new CEO was very happy with the value that MetaAnvil provided, and agreed to have MetaAnvil own 24% of Astrobeam, while the convertible note share will be determined upon Astrobeam’s next qualified round.
+Astrobeam received a ~ 0.5M convertible investment notes from a VC, with a 5M cap. Astrobeam subcontracted MetaForge to act as de-facto founders, who e.g. performed user interviews and formed partnerships, analysed competitor tech, created system designs, initial specs, metasurface designs, patentable IP, established supplier relationships, pre-negotiated FTO agreements, assembled a team of industry leading consultants, handled marketing, and found an experienced photonics CEO/founder to take over. The new CEO was very happy with the value that MetaForge provided, and agreed to have MetaForge own 24% of Astrobeam, while the convertible note share will be determined upon Astrobeam’s next qualified round.
 
 ### Further increasing spinoff efficiency
 
 - De-risk cheap, find out early whether we want to drop something. Keep the fraction of person-hours flowing into dead-ends under ⅓.
-- Get spinoff CEO to join early. Reduces spinoff team risk, handoff friction. Part of MetaAnvil’s spinoff shares that would have incentivised our own incubation manager goes to CEO instead to keep the part of the share that goes to our holdings constant.
+- Get spinoff CEO to join early. Reduces spinoff team risk, handoff friction. Part of MetaForge’s spinoff shares that would have incentivised our own incubation manager goes to CEO instead to keep the part of the share that goes to our holdings constant.
 - Shared resources (software, expertise etc) will bring the value provided to startups up at no extra cost to us.
 - Use our growing reputation and network of industry specialists to get introductions to CEO’s of industry leading users.
-- Use MetaAnvil’s access to classified need of US government agencies and relationships to decision makers who are eager to have metamaterial prodcuts, to bid for contracts in which we designate our spinoffs and the spinoff’s customers as major subcontractor (DARPA, Air Force, Space Force, NASA). 
+- Use MetaForge’s access to classified need of US government agencies and relationships to decision makers who are eager to have metamaterial prodcuts, to bid for contracts in which we designate our spinoffs and the spinoff’s customers as major subcontractor (DARPA, Air Force, Space Force, NASA). 
 
 ### Use of Funds
 
 Fund our own incubations. More successful spinoffs per $. Being able to quickly tweak spend and strategy (dropping something or doubling down on it) lets us:
 
 - Cut the spinoff timeline in half by avoiding pauses and constant fundraising.
-- MetaAnvil founders and spinoff CEO’s spend less time on bureaucracy, and more time de-risking.
+- MetaForge founders and spinoff CEO’s spend less time on bureaucracy, and more time de-risking.
 - Higher ROI: Generate a higher increase in portfolio value per invested dollar compared to betting on a single incubation. Allows us to move resources from sub-optimal incubations to star candidates.
 - More cost-effective de-risking through shared resources: Simulation software, engineers, expertise, network. Increase ratio of person-hours worked by employees over contractors. Allows us to further improve our proprietary and peerless simulation software to further increase the unfair advantage of our spinoffs with faster design and manufacturing.
 - More time-efficient capital deployment. Being pitched to for every $200k delays getting your funds to work.
 
 ### Strategy
 
-According to the above model, carrying the full convertible note amount ourselves (and reaping that additional portion of the spinoff equity) actually significantly brings down MetaAnvil’s ROI.
+According to the above model, carrying the full convertible note amount ourselves (and reaping that additional portion of the spinoff equity) actually significantly brings down MetaForge’s ROI.
 
-The reason for this is that MetaAnvil creates a massive ROI through the roughly 24% that receives for its incubation efforts, which is significantly higher than the ~2x return that the convertible note delivers when converting with the 5M cap on a 10M pre-money valuation of the spinoff. However, un-bureaucratically covering some of these convertibles ourselves helps streamline the incubation activity that has such a large lever on the ROI.
+The reason for this is that MetaForge creates a massive ROI through the roughly 24% that receives for its incubation efforts, which is significantly higher than the ~2x return that the convertible note delivers when converting with the 5M cap on a 10M pre-money valuation of the spinoff. However, un-bureaucratically covering some of these convertibles ourselves helps streamline the incubation activity that has such a large lever on the ROI.
 
-When the industry focus and stage of an incubation overlaps with the needs of an external party, such as a VC or a university (several of which are already very interested) that is willing to act fast, MetaAnvil is incentivised to have them provide the convertible or SAFE.
+When the industry focus and stage of an incubation overlaps with the needs of an external party, such as a VC or a university (several of which are already very interested) that is willing to act fast, MetaForge is incentivised to have them provide the convertible or SAFE.
 
-When none of our funding partners is in a position to make a quick decision, MetaAnvil can step in with cash, provide up to several hundred thousand into startups that it naturally knows most about, and allow MetaAnvil’s entrepreneurs or spinoff CEO’s to spend more time building before having to start diverting time to fundraising. The ability to easily bridge gaps between convertible notes prevents project pauses, without which the Astrobeam incubation for instance would have only taken half the time.
+When none of our funding partners is in a position to make a quick decision, MetaForge can step in with cash, provide up to several hundred thousand into startups that it naturally knows most about, and allow MetaForge’s entrepreneurs or spinoff CEO’s to spend more time building before having to start diverting time to fundraising. The ability to easily bridge gaps between convertible notes prevents project pauses, without which the Astrobeam incubation for instance would have only taken half the time.
 
 """
-with st.expander("Why MetaAnvil", expanded=True):
-    st.markdown(why_MetaAnvil, unsafe_allow_html=True)
+with st.expander("Why MetaForge", expanded=True):
+    st.markdown(why_MetaForge, unsafe_allow_html=True)
 
 why_the_world_needs_metamaterials = f"""
 ----
