@@ -1,225 +1,204 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import CubicSpline
+import pandas as pd
 
-# Function definitions
-def calculate_holdings_value(MA_share_post_conversion, staff_incentivisation, convertible_shares_frac, frac_convertible_from_MA):
-    return (MA_share_post_conversion * (1 - staff_incentivisation / 100)) + frac_convertible_from_MA * 100 * convertible_shares_frac
+st.set_page_config(layout="wide")
 
-def plot_portfolio(MA_share_val, staff_incentivisation_val, convertible_investment_val, frac_convertible_from_MA_val, pre_money_valuation_val, convertible_cap_val, MA_premoney_val, annual_spinoffs_vals):
-    convertible_shares_frac = convertible_investment_val / min(convertible_cap_val, pre_money_valuation_val)
-    holdings_values = []
-    total_money_spent_on_convertibles = 0
-    total_spinoffs = 0
-
-    for year, spinoff_count in annual_spinoffs_vals.items():
-        total_spinoffs += spinoff_count
-        future_value = total_spinoffs * calculate_holdings_value(MA_share_val, staff_incentivisation_val, convertible_shares_frac, frac_convertible_from_MA_val) * pre_money_valuation_val / 100
-        holdings_values.append(future_value / 1e6)
-        total_money_spent_on_convertibles += spinoff_count * convertible_investment_val * frac_convertible_from_MA_val
-
-    portfolio_value_2030 = sum(holdings_values)
-    VC_ownership_in_MA = total_money_spent_on_convertibles / (MA_premoney_val + total_money_spent_on_convertibles)
-    ROI = portfolio_value_2030 * VC_ownership_in_MA / total_money_spent_on_convertibles * 1e6
-
+# SPLINE FOR EIR NUMBER
+#---------------------------------------
+# Function to plot the spline
+def plot_spline(points, n_years):
+    years = np.linspace(2025, 2025 + n_years - 1, num=3) # Adjust the years array based on n_years
+    spline = CubicSpline(years, points)
+    x_range = np.linspace(2025, 2025 + n_years - 1, 300)
     fig, ax = plt.subplots()
-    ax.bar(annual_spinoffs_vals.keys(), np.cumsum(list(holdings_values)))
-    ax.set_xlabel('Year')
-    ax.set_title('Cumulative Portfolio value in USD M')
-    st.pyplot(fig)
-    
-    return total_money_spent_on_convertibles, portfolio_value_2030, VC_ownership_in_MA, ROI
+    ax.scatter(years, points, color='red', s=100, zorder=5, label='Adjustable Points')
+    ax.plot(x_range, spline(x_range), label='Cubic Spline')
+    ax.set_xlabel("Years")
+    ax.set_ylabel("Number of EIR's per cohort (One cohort every 6 months)")
+    ax.set_title("Set EIR's per cohort through interactive spline through points (Adjust on the left side)")
+    ax.legend()
+    ax.grid(True)
+    plt.subplots_adjust(left=0.05, right=1.4) # Adjust these values as needed to stretch the plot horizontally
+    return fig
 
-# Streamlit UI layout
-st.title('Why invest in METAFORGE')
+st.markdown("""
+    <div style="display: flex; align-items: center;">
+        <img src="https://shorturl.at/esOV7" width="100">        
+    </div>
+    <h1> M E T A F O R G E </h1>
+""", unsafe_allow_html=True)
+st.markdown("#### _Financial model_")
+st.markdown("<hr>", unsafe_allow_html=True)
 
-disclaimer = """
-----
-### Note
-The model assumes that we take all money up to 2030 in right now. Splitting this up into multiple financing rounds will improve things tremendously. The fact that the ROI looks decent despite not having modeled for this already says a lot about the viability of MetaForge's incubation.
-<br><br><br>
-"""
+n_years = st.sidebar.number_input("Number of years:", min_value=1, value=10, step=1)
 
-st.markdown(disclaimer, unsafe_allow_html=True)
+st.subheader("Number of EIR's per cohort")
+st.markdown("###### New cohorts starting every 6 months.")
 
+col1, col2 = st.columns([4, 6])
 
-# Define the default values for sliders
-MA_share_val_default = 24
-staff_incentivisation_val_default = 30
-convertible_investment_val_default = 0.8 * 1e6
-frac_convertible_from_MA_val_default = 0.3
-pre_money_valuation_val_default = 10 * 1e6
-convertible_cap_val_default = 5 * 1e6
-MA_premoney_val_default = 10 * 1e6
-years = [2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030]
-default_spinoffs = [2, 1, 3,4, 6, 9, 13, 18]
-annual_spinoffs_vals = {year: default_spinoffs[i] for i, year in enumerate(years)}
-
-# Define the layout for sliders
-col1, col2 = st.columns(2)
-
-# Function to calculate convertible_shares_frac
-def calculate_convertible_shares_frac(convertible_investment, convertible_cap, pre_money_valuation):
-    return convertible_investment / min(convertible_cap, pre_money_valuation)
-
-# Define sliders in columns
 with col1:
-    with st.expander("MetaForge and Staff Incentives", expanded=False):
-        MA_share_val = st.slider('MetaForge shares at spinoff [%] (excl convertible share)', 0, 35, MA_share_val_default)
-        staff_incentivisation_val = st.slider('% of MA\'s share being used to incentivize staff', 15, 40, staff_incentivisation_val_default)        
-        # Calculate convertible_shares_frac for use here
-        convertible_shares_frac_temp = calculate_convertible_shares_frac(convertible_investment_val_default, convertible_cap_val_default, pre_money_valuation_val_default)
-        convertible_share = convertible_shares_frac_temp * frac_convertible_from_MA_val_default * 100
-        convertible_share_text = f"""
-        {convertible_share:.2f}% <br> Shares from MetaForge's part in the convertible
-        """
-        st.markdown(convertible_share_text, unsafe_allow_html=True)
-        
-    with st.expander("MetaForge Valuation", expanded=False):
-            MA_premoney_val = st.slider('MetaForge pre-money valuation in USD M', 5, 25, int(MA_premoney_val_default / 1e6), step=1) * 1e6
-            
-    with st.expander("Convertible Notes and Spinoff Valuations", expanded=False):
-        convertible_investment_val = st.slider('Avg. convertible sum in USD M', 0.1, 1.0, convertible_investment_val_default / 1e6, step=0.1) * 1e6
-        frac_convertible_from_MA_val = st.slider('Fraction of convertible from MA [%]', 10, 50, int(frac_convertible_from_MA_val_default * 100), step=1) / 100
-        pre_money_valuation_val = st.slider('Avg. pre-money in USD M', 5, 20, int(pre_money_valuation_val_default / 1e6), step=1) * 1e6
-        convertible_cap_val = st.slider('Convertible cap in USD M', 5, 9, int(convertible_cap_val_default / 1e6), step=1) * 1e6
-        # Calculate and use convertible_shares_frac here
-        convertible_shares_frac = calculate_convertible_shares_frac(convertible_investment_val, convertible_cap_val, pre_money_valuation_val)
+    with st.expander("EIR's per cohort ", expanded=True):
+        mid_year = 2025 + (n_years - 1) / 2
+        quarter_mid = 'Q' + str(2 if n_years % 2 == 0 else 3)
+        quarter_end = 'Q4'
+        label1 = f"EIR's at Q3 in year 2025"
+        label2 = f"EIR's at {quarter_mid} in year {int(mid_year)}"
+        label3 = f"EIR's at {quarter_end} in year {2025 + n_years - 1}"
+        point1 = st.slider(label1, min_value=1, max_value=40, value=3)
+        point2 = st.slider(label2, min_value=1, max_value=40, value=7)
+        point3 = st.slider(label3, min_value=1, max_value=40, value=13)
+        points = [point1, point2, point3]
+        fig = plot_spline(points, n_years)
 
-with col2:    
+with col2:
+    st.pyplot(fig)
 
-    with st.expander("Annual Spinoffs", expanded=False):
-        for i, year in enumerate(years):
-            annual_spinoffs_vals[year] = st.slider(f'Spinoffs of {year}', 1, 18, default_spinoffs[i], key=f'spinoff_{year}_{i}')
+def estimate_EIRs(month):
+    # Assuming month 1 corresponds to January 2025
+    target_year = 2025 + (month - 1) / 12
+    # Ensure the spline has been initialized with the points from the latest sliders
+    years = np.array([2025, 2025 + (n_years - 1) / 2, 2025 + n_years - 1])
+    points = np.array([point1, point2, point3])
+    spline = CubicSpline(years, points)
+    # Get the estimate
+    return spline(target_year)
 
-    with st.expander("", expanded=False):
-        st.markdown("", unsafe_allow_html=True)
-    with st.expander("", expanded=False): 
-        st.markdown("", unsafe_allow_html=True)
+# Prediction horizon
+n_months = n_years * 12 
+months = np.arange(1, n_months + 1)
 
-# Call the plot function to update plot and values dynamically
-total_money_spent, portfolio_value_2030, VC_ownership, ROI = plot_portfolio(
-    MA_share_val, staff_incentivisation_val, convertible_investment_val, 
-    frac_convertible_from_MA_val, pre_money_valuation_val, convertible_cap_val, 
-    MA_premoney_val, annual_spinoffs_vals
-)
+# STAFF PROPORTIONS and SALARIES
+# Slider widgets
 
-# Display financial metrics right below the plot
-financial_metrics = f"""
-----
-<div style='font-size: 34px; font-weight: bold;'>
-    ROI = {ROI:.2f}x<br>    
-</div>
-<div style='font-size: 24px;'>    
-    Total funding = {total_money_spent/1e6:.1f} M<br>
-    Value of MetaForge's Portfolio in 2030 = {portfolio_value_2030:.0f} M<br>
-    VC ownership of MA = {VC_ownership*100:.0f} %<br><br>
-</div>
-"""
-st.markdown(financial_metrics, unsafe_allow_html=True)
+with st.sidebar.expander("Proportionality factors", expanded=True):
+    st.markdown('#### Proportionality factors')
+    venture_builder_to_EIR = st.slider("Number of venture builders to EIR's", 0.1, 1.0, 0.5)
+    admin_to_EIR = st.slider("Number of admin staff to EIR", 0.05, 0.5, 0.2)
+    lab_costs_to_EIR = st.slider("Monthly lab costs per EIR in $k", 2, 50, 10) # in $k
+    other_expenses_to_EIR = st.slider("Monthly other expenses per EIR (consultants, legal, misc. etc.) in $k ", 2, 80, 20) # in $k
 
-why_MetaForge = f"""
-----
-## Intent 
+with st.sidebar.expander("Monthly salaries", expanded=True):
+    st.markdown('#### Monthly salaries')
+    salary_admin = st.slider("Admin Staff ($k)", 3, 10, 6)
+    salary_EIR = st.slider("EIRs ($k)", 10, 20, 13)
+    salary_venture_builder = st.slider("Venture Builders ($k)", 10, 20, 13)
+extended_months = n_months + 16  # Add 16 months (incubation + spinoff delay)
 
-- Demonstrate why the ROI of funding MetaForge is higher than funding individual spinoffs directly.
-- Highlight that MetaForge as an incubator is a VC case, based on assumptions verified by its most recent spinoff Astrobeam.
+def new_cohort(n_EIR, starting_month,venture_builder_to_EIR, admin_to_EIR):
+    # Initialize arrays for tracking staff and spinoffs
+
+    n_EIR_cohort = np.zeros(extended_months)
+    n_venture_builders_cohort = np.zeros(extended_months)
+    n_admin_cohort = np.zeros(extended_months)
+    n_spinoffs = np.zeros(extended_months)
+    
+    # Phase 1: EIR engagement
+    duration_phase_1 = 2 # in months
+    n_EIR_cohort[starting_month:starting_month + duration_phase_1] = n_EIR
+    
+    # Phase 2: Incubation period
+    duration_incubation = 12 # in months
+    fr_incubation = 0.7 # Fraction moving to incubation
+    n_EIR_during_incubation = n_EIR * fr_incubation
+    n_EIR_cohort[starting_month + duration_phase_1:starting_month + duration_phase_1 + duration_incubation] = n_EIR_during_incubation
+    
+    # Calculating spinoffs
+    fr_spinoff = 0.5 # Fraction of incubations becoming spinoffs
+    n_spinoffs[starting_month + duration_phase_1 + duration_incubation] = n_EIR_during_incubation * fr_spinoff
+    
+    return n_EIR_cohort, n_spinoffs
+
+# Sum outputs from multiple cohorts
+total_EIRs = np.zeros(extended_months)
+total_spinoffs = np.zeros(extended_months)
+
+# Simulate increasing number of cohorts over time
+for i in range(int((n_months)/6)):
+    starting_month = i * 6 # Starting a new cohort every half year
+    n_EIR_cohort, n_spinoffs = new_cohort(estimate_EIRs(starting_month), starting_month, venture_builder_to_EIR, admin_to_EIR)
+    total_EIRs += n_EIR_cohort
+    total_spinoffs += n_spinoffs
+
+venture_builders = total_EIRs*venture_builder_to_EIR
+admin = total_EIRs*admin_to_EIR
+lab_costs = total_EIRs*lab_costs_to_EIR
+other_expenses= total_EIRs*other_expenses_to_EIR
+
+# Ensuring that venture builder and admin staff stays up
+for i in range(n_months):
+    if i > 1:
+        if venture_builders[i] < venture_builders[i-1]:
+            venture_builders[i] = venture_builders[i-1]
+            admin[i] = admin[i-1]
+
+# Prepare data for plotting
+st.markdown("<hr>", unsafe_allow_html=True)
+st.subheader("Expenses")
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
+ax1.plot(months, venture_builders[:n_months] * salary_venture_builder, label='Venture Builder Salaries')
+ax1.plot(months, admin[:n_months] * salary_admin, label='Admin Salaries')
+ax1.plot(months, total_EIRs[:n_months] * salary_EIR, label='EIR Salaries')
+ax1.plot(months, lab_costs[:n_months], label='Lab costs')
+ax1.plot(months, other_expenses[:n_months], label='Other expenses')
+
+ax1.set_xlabel('Months')
+ax1.set_ylabel('Individual expenses [$k]')
+ax1.set_title('Monthly expenses, listed individually')
+ax1.legend()
+
+total_salaries = (venture_builders[:n_months] * salary_venture_builder) + (admin[:n_months] * salary_admin) + total_EIRs[:n_months] * salary_EIR + lab_costs[:n_months] + other_expenses[:n_months] 
+ax2.plot(months, total_salaries, label='Total Monthly Expenses')
+ax2.set_xlabel('Months')
+ax2.set_ylabel('Total Expenses ($k)')
+ax2.set_title('Total Monthly Salary Expenditure')
+ax2.legend()
+
+st.pyplot(fig)
 
 
-### Hypotheses
+st.markdown("<hr>", unsafe_allow_html=True)
+st.subheader("Tabular format")
 
-- MetaForge can keep consistently created high-value spinoff.
-- MetaForge cash-efficiently crates enough value to justify a decent bite without tripping up the spinoffs in future rounds.
-- With funding MetaForge can streamline its activities to bring down incubation costs, durations, while increasing the market readiness of spinoffs.
+# Calculate the total salaries and reshape data for the table
+quarters = months[::3][:n_years*4]  # Limit to the specified number of years
+years = np.arange(2025, 2025 + len(quarters) // 4)
+quarterly_expenses = np.add.reduceat(total_salaries, np.arange(0, len(total_salaries), 3))[:len(quarters)] / 3
+quarterly_expenses = np.round(quarterly_expenses, -3) # Round to nearest thousand
 
-### The Astrobeam Spinoff Example
+# Ensure that the calculations don't produce decimals
+quarterly_expenses = np.round(np.add.reduceat(total_salaries, np.arange(0, len(total_salaries), 3))[:len(quarters)] / 3, 0)
+quarterly_venture_builders = np.round(np.add.reduceat(venture_builders, np.arange(0, len(venture_builders), 3))[:len(quarters)] / 3, 0)
+quarterly_admin = np.round(np.add.reduceat(admin, np.arange(0, len(admin), 3))[:len(quarters)] / 3, 0)
+quarterly_EIRs = np.round(np.add.reduceat(total_EIRs, np.arange(0, len(total_EIRs), 3))[:len(quarters)] / 3, 0)
+quarterly_lab_costs = np.round(np.add.reduceat(lab_costs, np.arange(0, len(total_EIRs), 3))[:len(quarters)] / 3, 0)
+quarterly_other_expenses = np.round(np.add.reduceat(other_expenses, np.arange(0, len(total_EIRs), 3))[:len(quarters)] / 3, 0)
+quarterly_new_spinoffs = np.round(np.add.reduceat(total_spinoffs, np.arange(0, len(total_spinoffs), 3))[:len(quarters)], 0)
+cumulative_spinoffs = np.round(np.cumsum(quarterly_new_spinoffs), 0)
 
-Astrobeam received a ~ 0.5M convertible investment notes from a VC, with a 5M cap. Astrobeam subcontracted MetaForge to act as de-facto founders, who e.g. performed user interviews and formed partnerships, analysed competitor tech, created system designs, initial specs, metasurface designs, patentable IP, established supplier relationships, pre-negotiated FTO agreements, assembled a team of industry leading consultants, handled marketing, and found an experienced photonics CEO/founder to take over. The new CEO was very happy with the value that MetaForge provided, and agreed to have MetaForge own 24% of Astrobeam, while the convertible note share will be determined upon Astrobeam’s next qualified round.
 
-### Further increasing spinoff efficiency
+#Creating DataFrame for display
+data = {
+'Year': np.repeat(years, 4)[:len(quarters)].astype(str), # Convert to string to avoid Arrow conversion issues
+'Quarter': ['Q1', 'Q2', 'Q3', 'Q4'] * len(years),
+'Average Quarterly Expenses ($k)': quarterly_expenses.astype(int),
+'Average Quarterly Venture Builders': quarterly_venture_builders.astype(int),
+'Average Quarterly Admin Staff': quarterly_admin.astype(int),
+'Average Quarterly EIRs': quarterly_EIRs.astype(int),
+'Average Quarterly lab costs': quarterly_lab_costs.astype(int),
+'Average Quarterly other expenses': quarterly_other_expenses.astype(int),
+'New Spinoffs This Quarter': quarterly_new_spinoffs.astype(int),
+'Spinoffs So Far (Cumulative)': cumulative_spinoffs.astype(int)
+}
 
-- De-risk cheap, find out early whether we want to drop something. Keep the fraction of person-hours flowing into dead-ends under ⅓.
-- Get spinoff CEO to join early. Reduces spinoff team risk, handoff friction. Part of MetaForge’s spinoff shares that would have incentivised our own incubation manager goes to CEO instead to keep the part of the share that goes to our holdings constant.
-- Shared resources (software, expertise etc) will bring the value provided to startups up at no extra cost to us.
-- Use our growing reputation and network of industry specialists to get introductions to CEO’s of industry leading users.
-- Use MetaForge’s access to classified need of US government agencies and relationships to decision makers who are eager to have metamaterial prodcuts, to bid for contracts in which we designate our spinoffs and the spinoff’s customers as major subcontractor (DARPA, Air Force, Space Force, NASA). 
+df = pd.DataFrame(data)
 
-### Use of Funds
+#Set the DataFrame index to 'Year' and 'Quarter' for better organization
+df.set_index(['Year', 'Quarter'], inplace=True)
 
-Fund our own incubations. More successful spinoffs per $. Being able to quickly tweak spend and strategy (dropping something or doubling down on it) lets us:
-
-- Cut the spinoff timeline in half by avoiding pauses and constant fundraising.
-- MetaForge founders and spinoff CEO’s spend less time on bureaucracy, and more time de-risking.
-- Higher ROI: Generate a higher increase in portfolio value per invested dollar compared to betting on a single incubation. Allows us to move resources from sub-optimal incubations to star candidates.
-- More cost-effective de-risking through shared resources: Simulation software, engineers, expertise, network. Increase ratio of person-hours worked by employees over contractors. Allows us to further improve our proprietary and peerless simulation software to further increase the unfair advantage of our spinoffs with faster design and manufacturing.
-- More time-efficient capital deployment. Being pitched to for every $200k delays getting your funds to work.
-
-### Strategy
-
-According to the above model, carrying the full convertible note amount ourselves (and reaping that additional portion of the spinoff equity) actually significantly brings down MetaForge’s ROI.
-
-The reason for this is that MetaForge creates a massive ROI through the roughly 24% that receives for its incubation efforts, which is significantly higher than the ~2x return that the convertible note delivers when converting with the 5M cap on a 10M pre-money valuation of the spinoff. However, un-bureaucratically covering some of these convertibles ourselves helps streamline the incubation activity that has such a large lever on the ROI.
-
-When the industry focus and stage of an incubation overlaps with the needs of an external party, such as a VC or a university (several of which are already very interested) that is willing to act fast, MetaForge is incentivised to have them provide the convertible or SAFE.
-
-When none of our funding partners is in a position to make a quick decision, MetaForge can step in with cash, provide up to several hundred thousand into startups that it naturally knows most about, and allow MetaForge’s entrepreneurs or spinoff CEO’s to spend more time building before having to start diverting time to fundraising. The ability to easily bridge gaps between convertible notes prevents project pauses, without which the Astrobeam incubation for instance would have only taken half the time.
-
-"""
-with st.expander("Why MetaForge", expanded=True):
-    st.markdown(why_MetaForge, unsafe_allow_html=True)
-
-why_the_world_needs_metamaterials = f"""
-----
-# Why the World Needs Metamaterials
-
-## What are Metamaterials?
-Metamaterials (mmats) are materials characterized by their unique pattern of unit-cells, not by a new chemical makeup. These patterns allow metamaterials to shape and steer electromagnetic beams without moving parts, often made up of a flat, two-dimensional array of repeating cells.
-
-## Metamaterial Advantages
-
-- **Create Arbitrary Beam Shapes On The Fly**
-  - Access to exotic, efficient search patterns, improving wireless communication, radar performance, through-wall imaging, etc.
-  - Focused RF beams enhance signal strength and reduce interference, maximizing bandwidth utilization.
-- **Change Beam Direction Instantly**
-  - Eliminates dead-times in inter-satellite laser communication.
-  - Enables laser-based point-to-multipoint connections by quickly alternating between communication partners.
-- **Reduced Interference/Jamming**
-  - Beamforming minimizes signal clash, enhancing network resilience (e.g., Starlink in Ukraine).
-- **Stealth**
-  - Focused beams make source detection difficult, safeguarding locations (e.g., in military applications).
-  - Proximity required to detect transmissions, enhancing operational secrecy.
-  - Empowers F-35s with advanced radar capabilities without location disclosure.
-- **Longer Range**
-  - Enhanced focus in transmission extends the range, crucial for mobile platforms.
-- **No Moving Parts**
-  - Increases reliability, reduces maintenance costs.
-  - Resilient to high accelerations, temperature variations, and vibrations.
-  - Minimizes performance impact on other equipment.
-- **Insensitivity to Vibrations**
-  - High-frequency steering immune to mechanical vibrations.
-- **Remote Upgradability**
-  - Reconfigurable to emulate various antenna characteristics.
-- **Fault Tolerance**
-  - Modular design allows for resilience against component failures.
-- **Interoperability**
-  - Easily integrates with various systems due to software-based control.
-- **Energy Efficiency**
-  - Direct result of focused tracking capability.
-- **Low Latency**
-  - Rapid adjustments reduce data transmission delays.
-- **Spectral Efficiency**
-  - Enhanced frequency spectrum utilization for increased data transmission.
-- **Lower Cost**
-  - Mass producible using existing fabrication technologies.
-- **Smaller Elements and Lighter, Thinner Design**
-  - High density of unit cells enables precise beam shaping.
-- **Self-Calibratable**
-  - Compensates for manufacturing defects, allowing higher tolerances.
-- **Conformable Shapes**
-  - Adaptable to various surface geometries, enhancing application in diverse fields.
-
-*Note: Phased array approaches, though somewhat similar, are larger, heavier, more power-consuming, and significantly more expensive than metamaterials. They are also less flexible in shaping beams and cannot be easily conformed to varied shapes.*
-
-"""
-with st.expander("The world needs metamaterials", expanded=False):
-    st.markdown(why_the_world_needs_metamaterials, unsafe_allow_html=True)
+#Display using Streamlit 
+st.dataframe(df)
