@@ -31,7 +31,7 @@ def plot_portfolio(MA_share_val, staff_incentivisation_val, convertible_investme
     return total_money_spent_on_convertibles, portfolio_value_2030, VC_ownership_in_MA, ROI
 
 # Streamlit UI layout
-st.title('Why invest in MetaForge')
+st.title('Why invest in METAFORGE')
 
 disclaimer = """
 ----
